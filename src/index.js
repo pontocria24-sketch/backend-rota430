@@ -9,7 +9,7 @@ const clientesRoutes = require('./routes/clientes');
 const veiculosRoutes = require('./routes/veiculos');
 const ordensRoutes = require('./routes/ordens');
 const funcionariosRoutes = require('./routes/funcionarios');
-const brindesRoutes = require('./routes/brindes');
+const brindesRoutes = require('./rotas/brindes');
 const dashboardRoutes = require('./routes/dashboard');
 const configRoutes = require('./routes/configuracoes');
 
@@ -21,15 +21,23 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   credentials: true,
 }));
+
 app.use(express.json());
 
-// Health check
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+// ✅ ROTA RAIZ
+app.get('/', (req, res) => {
+  res.send('API MecânicaPro rodando 🚀');
+});
 
-// Rotas públicas
+// ✅ HEALTHCHECK
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// 🔓 Rotas públicas
 app.use('/auth', authRoutes);
 
-// Rotas protegidas (requerem JWT)
+// 🔐 Rotas protegidas
 app.use('/clientes', authMiddleware, clientesRoutes);
 app.use('/veiculos', authMiddleware, veiculosRoutes);
 app.use('/ordens', authMiddleware, ordensRoutes);
@@ -38,12 +46,13 @@ app.use('/brindes', authMiddleware, brindesRoutes);
 app.use('/dashboard', authMiddleware, dashboardRoutes);
 app.use('/configuracoes', authMiddleware, configRoutes);
 
-// Error handler global
+// ❌ Handler de erro
 app.use((err, req, res, next) => {
   console.error('Erro não tratado:', err);
-  res.status(500).json({ error: 'Erro interno do servidor' });
+  res.status(500).json({ erro: 'Erro interno do servidor' });
 });
 
+// 🚀 Start
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 MecânicaPro API rodando na porta ${PORT}`);
+  console.log(`🚀 API MecânicaPro rodando na porta ${PORT}`);
 });
