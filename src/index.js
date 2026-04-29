@@ -9,7 +9,7 @@ const clientesRoutes = require('./routes/clientes');
 const veiculosRoutes = require('./routes/veiculos');
 const ordensRoutes = require('./routes/ordens');
 const funcionariosRoutes = require('./routes/funcionarios');
-const brindesRoutes = require('./rotas/brindes');
+const brindesRoutes = require('./routes/brindes');
 const dashboardRoutes = require('./routes/dashboard');
 const configRoutes = require('./routes/configuracoes');
 
