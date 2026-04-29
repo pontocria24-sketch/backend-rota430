@@ -4,6 +4,7 @@ const cors = require('cors');
 
 const { authMiddleware } = require('./middleware/auth');
 
+// ROTAS
 const authRoutes = require('./routes/auth');
 const clientesRoutes = require('./routes/clientes');
 const veiculosRoutes = require('./routes/veiculos');
@@ -12,18 +13,24 @@ const funcionariosRoutes = require('./routes/funcionarios');
 const brindesRoutes = require('./routes/brindes');
 const dashboardRoutes = require('./routes/dashboard');
 const configRoutes = require('./routes/configuracoes');
-const meRoutes = require('./routes/me'); // 👈 ADICIONADO
+const meRoutes = require('./routes/me');
+
+// 🔥 NOVAS ROTAS
+const servicosRoutes = require('./routes/servicos');
+const logsRoutes = require('./routes/logs');
+const alertasRoutes = require('./routes/alertas');
+const resgatesRoutes = require('./routes/resgates');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔥 LOG DE REQUEST
+// LOG DE REQUEST
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.url}`);
   next();
 });
 
-// 🔥 CORS
+// CORS
 app.use(cors({
   origin: true,
   credentials: true,
@@ -41,10 +48,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// PUBLIC
+// 🔓 PUBLIC
 app.use('/auth', authRoutes);
 
-// PRIVATE
+// 🔐 PRIVATE
+app.use('/me', authMiddleware, meRoutes);
+
 app.use('/clientes', authMiddleware, clientesRoutes);
 app.use('/veiculos', authMiddleware, veiculosRoutes);
 app.use('/ordens', authMiddleware, ordensRoutes);
@@ -52,7 +61,12 @@ app.use('/funcionarios', authMiddleware, funcionariosRoutes);
 app.use('/brindes', authMiddleware, brindesRoutes);
 app.use('/dashboard', authMiddleware, dashboardRoutes);
 app.use('/configuracoes', authMiddleware, configRoutes);
-app.use('/me', authMiddleware, meRoutes); // 👈 AQUI
+
+// 🔥 NOVAS ROTAS (AGORA NÃO VAI DAR 404)
+app.use('/servicos', authMiddleware, servicosRoutes);
+app.use('/logs', authMiddleware, logsRoutes);
+app.use('/alertas', authMiddleware, alertasRoutes);
+app.use('/resgates_brindes', authMiddleware, resgatesRoutes);
 
 // ERROR
 app.use((err, req, res, next) => {
