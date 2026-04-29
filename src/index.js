@@ -24,13 +24,13 @@ const resgatesRoutes = require('./routes/resgates');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// LOG DE REQUEST
+// 🔥 LOG DE REQUEST (mantém)
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.url}`);
   next();
 });
 
-// CORS
+// 🔥 CORS (ok)
 app.use(cors({
   origin: true,
   credentials: true,
@@ -62,13 +62,15 @@ app.use('/brindes', authMiddleware, brindesRoutes);
 app.use('/dashboard', authMiddleware, dashboardRoutes);
 app.use('/configuracoes', authMiddleware, configRoutes);
 
-// 🔥 NOVAS ROTAS (AGORA NÃO VAI DAR 404)
+// 🔥 NOVAS ROTAS (ESSENCIAL PRA NÃO DAR ERRO NO FRONT)
 app.use('/servicos', authMiddleware, servicosRoutes);
 app.use('/logs', authMiddleware, logsRoutes);
 app.use('/alertas', authMiddleware, alertasRoutes);
+
+// 🔥 CORREÇÃO IMPORTANTE AQUI 👇
 app.use('/resgates_brindes', authMiddleware, resgatesRoutes);
 
-// ERROR
+// ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error('Erro não tratado:', err);
   res.status(500).json({
