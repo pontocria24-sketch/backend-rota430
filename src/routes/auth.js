@@ -13,7 +13,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    // 🔎 Busca funcionário pelo email
+    // 🔎 Busca funcionário
     let result = await db.query(
       'SELECT id, nome, email, senha_hash, nivel FROM funcionarios WHERE email = $1',
       [email]
@@ -22,10 +22,10 @@ router.post('/login', async (req, res) => {
     let user = result.rows[0];
     let nivel = user?.nivel;
 
-    // 🔎 Se não achou, busca como cliente
+    // 🔎 Se não achou, busca cliente
     if (!user) {
       result = await db.query(
-        'SELECT id, nome, email, senha_hash, cpf_cnpj FROM clientes WHERE email = $1 OR cpf_cnpj = $1',
+        'SELECT id, nome, email, senha_hash FROM clientes WHERE email = $1 OR cpf_cnpj = $1',
         [email]
       );
 
@@ -38,14 +38,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    // 🔐 Compara senha com hash
+    // 🔐 Validação de senha
+    if (!user.senha_hash) {
+      return res.status(500).json({ error: 'Usuário sem senha cadastrada' });
+    }
+
     const senhaValida = await bcrypt.compare(senha, user.senha_hash);
 
     if (!senhaValida) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    // 🎟️ Gera token
+    // 🔑 Token
     const token = jwt.sign(
       {
         id: user.id,
@@ -57,13 +61,13 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // ✅ Retorno
+    // ✅ Resposta
     return res.json({
       id: user.id,
       nome: user.nome,
       email: user.email,
       nivel,
-      token,
+      token
     });
 
   } catch (err) {
