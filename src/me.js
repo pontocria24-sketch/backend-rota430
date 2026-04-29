@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     const userId = req.user.id;
     const nivel = req.user.nivel;
 
-    // 🔎 Busca dados do usuário
+    // 🔎 Busca usuário
     const userRes = await db.query(
       'SELECT id, nome, email, nivel FROM usuarios WHERE id = $1',
       [userId]
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 
     let cliente = null;
 
-    // 🔥 Se for cliente, busca dados adicionais
+    // 🔥 Se for cliente
     if (nivel === 3) {
       const clienteRes = await db.query(
         'SELECT id, cpf_cnpj, telefone, pontos_totais FROM clientes WHERE usuario_id = $1',
@@ -33,14 +33,14 @@ router.get('/', async (req, res) => {
       cliente = clienteRes.rows[0] || null;
     }
 
-    res.json({
-      ...user,
+    return res.json({
+      usuario: user,
       cliente
     });
 
   } catch (err) {
-    console.error('Erro em /me:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('Erro no /me:', err);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
