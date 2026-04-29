@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs'); // 👈 IMPORTANTE
 
 const { authMiddleware } = require('./middleware/auth');
 
@@ -17,35 +16,38 @@ const configRoutes = require('./routes/configuracoes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-
-// 🔥 GERA HASH AUTOMATICO (REMOVER DEPOIS)
-bcrypt.hash('123456', 10).then(hash => {
-  console.log('🔥 HASH GERADO:', hash);
+// 🔥 LOG DE REQUEST
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} ${req.url}`);
+  next();
 });
 
-
-// Middlewares globais
+// 🔥 CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
   credentials: true,
 }));
 
 app.use(express.json());
 
-// ✅ ROTA RAIZ
+// ROOT
 app.get('/', (req, res) => {
   res.send('API MecânicaPro rodando 🚀');
 });
 
-// ✅ HEALTHCHECK
+// HEALTH
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// 🔓 Rotas públicas
+// PUBLIC
 app.use('/auth', authRoutes);
 
-// 🔐 Rotas protegidas
+// PRIVATE
 app.use('/clientes', authMiddleware, clientesRoutes);
 app.use('/veiculos', authMiddleware, veiculosRoutes);
 app.use('/ordens', authMiddleware, ordensRoutes);
@@ -54,13 +56,16 @@ app.use('/brindes', authMiddleware, brindesRoutes);
 app.use('/dashboard', authMiddleware, dashboardRoutes);
 app.use('/configuracoes', authMiddleware, configRoutes);
 
-// ❌ Handler de erro
+// ERROR
 app.use((err, req, res, next) => {
   console.error('Erro não tratado:', err);
-  res.status(500).json({ erro: 'Erro interno do servidor' });
+  res.status(500).json({
+    erro: 'Erro interno do servidor',
+    detalhe: process.env.NODE_ENV === 'production' ? undefined : err.message
+  });
 });
 
-// 🚀 Start
+// START
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 API MecânicaPro rodando na porta ${PORT}`);
 });
