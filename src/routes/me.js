@@ -3,10 +3,9 @@ const db = require('../db');
 
 const router = Router();
 
-// GET /me
 router.get('/', async (req, res) => {
   try {
-    // 🔥 PROTEÇÃO
+    // 🔥 PROTEÇÃO IMPORTANTE
     if (!req.user) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -20,11 +19,11 @@ router.get('/', async (req, res) => {
       [userId]
     );
 
-    const user = userRes.rows[0];
-
-    if (!user) {
+    if (!userRes.rows[0]) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+
+    const user = userRes.rows[0];
 
     let cliente = null;
 
@@ -44,8 +43,8 @@ router.get('/', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Erro na rota /me:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('🔥 ERRO /me:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
