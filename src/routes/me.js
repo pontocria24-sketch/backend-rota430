@@ -3,13 +3,18 @@ const db = require('../db');
 
 const router = Router();
 
-// 🔥 ROTA /me
+// GET /me
 router.get('/', async (req, res) => {
   try {
+    // 🔥 PROTEÇÃO
+    if (!req.user) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     const userId = req.user.id;
     const nivel = req.user.nivel;
 
-    // 🔎 Busca usuário
+    // 🔍 busca usuário
     const userRes = await db.query(
       'SELECT id, nome, email, nivel FROM usuarios WHERE id = $1',
       [userId]
@@ -23,7 +28,7 @@ router.get('/', async (req, res) => {
 
     let cliente = null;
 
-    // 🔥 Se for cliente
+    // 🔥 se for cliente
     if (nivel === 3) {
       const clienteRes = await db.query(
         'SELECT id, cpf_cnpj, telefone, pontos_totais FROM clientes WHERE usuario_id = $1',
@@ -33,14 +38,14 @@ router.get('/', async (req, res) => {
       cliente = clienteRes.rows[0] || null;
     }
 
-    return res.json({
+    res.json({
       usuario: user,
       cliente
     });
 
   } catch (err) {
-    console.error('Erro no /me:', err);
-    return res.status(500).json({ error: 'Erro interno do servidor' });
+    console.error('Erro na rota /me:', err);
+    res.status(500).json({ error: 'Erro interno' });
   }
 });
 
