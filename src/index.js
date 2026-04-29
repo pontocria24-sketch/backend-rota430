@@ -12,6 +12,7 @@ const funcionariosRoutes = require('./routes/funcionarios');
 const brindesRoutes = require('./routes/brindes');
 const dashboardRoutes = require('./routes/dashboard');
 const configRoutes = require('./routes/configuracoes');
+const meRoutes = require('./routes/me'); // 👈 ADICIONADO
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -51,6 +52,7 @@ app.use('/funcionarios', authMiddleware, funcionariosRoutes);
 app.use('/brindes', authMiddleware, brindesRoutes);
 app.use('/dashboard', authMiddleware, dashboardRoutes);
 app.use('/configuracoes', authMiddleware, configRoutes);
+app.use('/me', authMiddleware, meRoutes); // 👈 AQUI
 
 // ERROR
 app.use((err, req, res, next) => {
