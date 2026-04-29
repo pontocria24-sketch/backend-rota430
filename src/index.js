@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const bcrypt = require('bcryptjs'); // 👈 IMPORTANTE
 
 const { authMiddleware } = require('./middleware/auth');
 
@@ -15,6 +16,13 @@ const configRoutes = require('./routes/configuracoes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+
+// 🔥 GERA HASH AUTOMATICO (REMOVER DEPOIS)
+bcrypt.hash('123456', 10).then(hash => {
+  console.log('🔥 HASH GERADO:', hash);
+});
+
 
 // Middlewares globais
 app.use(cors({
