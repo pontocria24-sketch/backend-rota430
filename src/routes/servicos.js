@@ -1,9 +1,5 @@
-if (req.user.nivel !== 1 && req.user.nivel !== 2) {
-  return res.status(403).json({ error: 'Sem permissão para criar serviço' });
-}
 const { Router } = require('express');
 const db = require('../db');
-const { adminOnly } = require('../middleware/auth');
 
 const router = Router();
 
@@ -31,6 +27,11 @@ router.get('/', async (req, res) => {
 // POST - criar serviço
 router.post('/', async (req, res) => {
   try {
+    // 🔐 PERMISSÃO CORRETA (AQUI dentro!)
+    if (req.user.nivel !== 1 && req.user.nivel !== 2) {
+      return res.status(403).json({ error: 'Sem permissão para criar serviço' });
+    }
+
     const { nome, descricao, preco } = req.body;
 
     const { rows } = await db.query(`
@@ -45,6 +46,7 @@ router.post('/', async (req, res) => {
     `, [nome, descricao, preco]);
 
     res.status(201).json(rows[0]);
+
   } catch (err) {
     console.error('Erro ao criar serviço:', err);
     res.status(500).json({ error: 'Erro interno' });
