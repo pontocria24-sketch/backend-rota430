@@ -4,159 +4,65 @@ const { adminOnly } = require('../middleware/auth');
 
 const router = Router();
 
-
-// 🔥 GET CONFIGURAÇÕES
+// 🔎 BUSCAR CONFIGURAÇÕES
 router.get('/', async (req, res) => {
   try {
     const { rows } = await db.query('SELECT * FROM configuracoes LIMIT 1');
-
-    if (!rows[0]) {
-      const { rows: newRows } = await db.query(`
-        INSERT INTO configuracoes 
-        (nome_sistema, headline, subheadline, cor_primaria, pontos_por_real)
-        VALUES ('MecânicaPro', 'Bem-vindo à MecânicaPro', 'Sua oficina de confiança', '#f97316', 1.0)
-        RETURNING *
-      `);
-      return res.json(newRows[0]);
-    }
-
     res.json(rows[0]);
-
   } catch (err) {
     console.error('Erro ao buscar configurações:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro ao buscar configurações' });
   }
 });
 
-
-// 🔥 PUT (padrão REST)
-router.put('/', adminOnly, async (req, res) => {
+// 💾 SALVAR CONFIGURAÇÕES (POST e PUT)
+async function salvar(req, res) {
   try {
-    const { nome_sistema, headline, subheadline, cor_primaria, pontos_por_real, logo_path } = req.body;
-
-    const current = await db.query('SELECT id FROM configuracoes LIMIT 1');
-
-    if (!current.rows[0]) {
-      return res.status(404).json({ error: 'Configuração não encontrada' });
-    }
+    const {
+      nome_sistema,
+      headline,
+      subheadline,
+      cor_primaria,
+      cor_sidebar,
+      pontos_por_real,
+      mensagem_aniversario,
+      mensagem_revisao,
+      logo_path
+    } = req.body;
 
     const { rows } = await db.query(`
-      UPDATE configuracoes 
-      SET nome_sistema=$1, headline=$2, subheadline=$3, cor_primaria=$4, pontos_por_real=$5, logo_path=$6
-      WHERE id=$7 RETURNING *
+      UPDATE configuracoes
+      SET
+        nome_sistema = COALESCE($1, nome_sistema),
+        headline = COALESCE($2, headline),
+        subheadline = COALESCE($3, subheadline),
+        cor_primaria = COALESCE($4, cor_primaria),
+        cor_sidebar = COALESCE($5, cor_sidebar),
+        pontos_por_real = COALESCE($6, pontos_por_real),
+        mensagem_aniversario = COALESCE($7, mensagem_aniversario),
+        mensagem_revisao = COALESCE($8, mensagem_revisao),
+        logo_path = COALESCE($9, logo_path)
+      RETURNING *
     `, [
       nome_sistema,
       headline,
       subheadline,
       cor_primaria,
+      cor_sidebar,
       pontos_por_real,
-      logo_path,
-      current.rows[0].id
+      mensagem_aniversario,
+      mensagem_revisao,
+      logo_path
     ]);
 
     res.json(rows[0]);
-
-  } catch (err) {
-    console.error('Erro ao atualizar configurações:', err);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-
-// 🔥 POST /configuracoes (compatível com frontend)
-router.post('/', adminOnly, async (req, res) => {
-  try {
-    const { nome_sistema, headline, subheadline, cor_primaria, pontos_por_real, logo_path } = req.body;
-
-    const current = await db.query('SELECT id FROM configuracoes LIMIT 1');
-
-    let result;
-
-    if (!current.rows[0]) {
-      result = await db.query(`
-        INSERT INTO configuracoes 
-        (nome_sistema, headline, subheadline, cor_primaria, pontos_por_real, logo_path)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *
-      `, [
-        nome_sistema,
-        headline,
-        subheadline,
-        cor_primaria,
-        pontos_por_real,
-        logo_path
-      ]);
-    } else {
-      result = await db.query(`
-        UPDATE configuracoes 
-        SET nome_sistema=$1, headline=$2, subheadline=$3, cor_primaria=$4, pontos_por_real=$5, logo_path=$6
-        WHERE id=$7 RETURNING *
-      `, [
-        nome_sistema,
-        headline,
-        subheadline,
-        cor_primaria,
-        pontos_por_real,
-        logo_path,
-        current.rows[0].id
-      ]);
-    }
-
-    res.json(result.rows[0]);
-
   } catch (err) {
     console.error('Erro ao salvar configurações:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro ao salvar configurações' });
   }
-});
+}
 
-
-// 🔥 POST /configuracoes/insert (mantido compatível)
-router.post('/insert', adminOnly, async (req, res) => {
-  try {
-    const { nome_sistema, headline, subheadline, cor_primaria, pontos_por_real, logo_path } = req.body;
-
-    const current = await db.query('SELECT id FROM configuracoes LIMIT 1');
-
-    let result;
-
-    if (!current.rows[0]) {
-      result = await db.query(`
-        INSERT INTO configuracoes 
-        (nome_sistema, headline, subheadline, cor_primaria, pontos_por_real, logo_path)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *
-      `, [
-        nome_sistema,
-        headline,
-        subheadline,
-        cor_primaria,
-        pontos_por_real,
-        logo_path
-      ]);
-    } else {
-      result = await db.query(`
-        UPDATE configuracoes 
-        SET nome_sistema=$1, headline=$2, subheadline=$3, cor_primaria=$4, pontos_por_real=$5, logo_path=$6
-        WHERE id=$7 RETURNING *
-      `, [
-        nome_sistema,
-        headline,
-        subheadline,
-        cor_primaria,
-        pontos_por_real,
-        logo_path,
-        current.rows[0].id
-      ]);
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (err) {
-    console.error('Erro ao salvar configurações:', err);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
+router.post('/', adminOnly, salvar);
+router.put('/', adminOnly, salvar);
 
 module.exports = router;
