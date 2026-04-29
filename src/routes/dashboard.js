@@ -3,7 +3,8 @@ const db = require('../db');
 
 const router = Router();
 
-router.get('/stats', async (req, res) => {
+// 🔥 ROTA PRINCIPAL (compatível com frontend)
+router.get('/', async (req, res) => {
   try {
     // Total de clientes
     const clientesRes = await db.query('SELECT COUNT(*) as total FROM clientes');
@@ -14,12 +15,17 @@ router.get('/stats', async (req, res) => {
     const total_veiculos = parseInt(veiculosRes.rows[0].total);
 
     // OS abertas
-    const osAbertasRes = await db.query("SELECT COUNT(*) as total FROM ordens_servico WHERE status = 'aberta'");
+    const osAbertasRes = await db.query(`
+      SELECT COUNT(*) as total 
+      FROM ordens_servico 
+      WHERE status = 'aberta'
+    `);
     const os_abertas = parseInt(osAbertasRes.rows[0].total);
 
     // OS finalizadas no mês
     const osFinMesRes = await db.query(`
-      SELECT COUNT(*) as total FROM ordens_servico 
+      SELECT COUNT(*) as total 
+      FROM ordens_servico 
       WHERE status = 'finalizada' 
       AND created_at >= date_trunc('month', CURRENT_DATE)
     `);
@@ -27,22 +33,25 @@ router.get('/stats', async (req, res) => {
 
     // Faturamento do mês
     const fatRes = await db.query(`
-      SELECT COALESCE(SUM(valor_total), 0) as total FROM ordens_servico 
+      SELECT COALESCE(SUM(valor_total), 0) as total 
+      FROM ordens_servico 
       WHERE status = 'finalizada' 
       AND created_at >= date_trunc('month', CURRENT_DATE)
     `);
     const faturamento_mes = parseFloat(fatRes.rows[0].total);
 
-    // Revisões pendentes (clientes com última OS finalizada há mais de 6 meses)
+    // Revisões pendentes
     const revisaoRes = await db.query(`
-      SELECT COUNT(DISTINCT c.id) as total
-      FROM clientes c
-      INNER JOIN ordens_servico os ON os.cliente_id = c.id
-      WHERE os.status = 'finalizada'
-      GROUP BY c.id
-      HAVING MAX(os.created_at) < NOW() - INTERVAL '6 months'
+      SELECT COUNT(*) as total FROM (
+        SELECT c.id
+        FROM clientes c
+        INNER JOIN ordens_servico os ON os.cliente_id = c.id
+        WHERE os.status = 'finalizada'
+        GROUP BY c.id
+        HAVING MAX(os.created_at) < NOW() - INTERVAL '6 months'
+      ) sub
     `);
-    const revisoes_pendentes = revisaoRes.rows.length;
+    const revisoes_pendentes = parseInt(revisaoRes.rows[0].total);
 
     // Aniversariantes do mês
     const anivRes = await db.query(`
@@ -64,7 +73,7 @@ router.get('/stats', async (req, res) => {
       ORDER BY mes
     `);
 
-    res.json({
+    return res.json({
       total_clientes,
       total_veiculos,
       os_abertas,
@@ -78,10 +87,16 @@ router.get('/stats', async (req, res) => {
         faturamento: parseFloat(r.faturamento),
       })),
     });
+
   } catch (err) {
-    console.error('Erro ao buscar stats:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('Erro ao buscar dashboard:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
+});
+
+// 🔥 (Opcional) manter compatibilidade antiga
+router.get('/stats', async (req, res) => {
+  return res.redirect('/dashboard');
 });
 
 module.exports = router;
