@@ -91,3 +91,33 @@ router.put('/:id/mecanico', async (req, res) => {
 });
 
 module.exports = router;
+
+// EDITAR OS (SIMPLES)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cliente_id, veiculo_id, descricao, valor_total, status } = req.body;
+
+    const { rows } = await db.query(`
+      UPDATE ordens_servico
+      SET
+        cliente_id = COALESCE($1, cliente_id),
+        veiculo_id = COALESCE($2, veiculo_id),
+        descricao = COALESCE($3, descricao),
+        valor_total = COALESCE($4, valor_total),
+        status = COALESCE($5, status)
+      WHERE id = $6
+      RETURNING *
+    `, [cliente_id, veiculo_id, descricao, valor_total, status, id]);
+
+    if (!rows[0]) {
+      return res.status(404).json({ error: 'Ordem não encontrada' });
+    }
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao atualizar ordem' });
+  }
+});
