@@ -3,15 +3,17 @@ const db = require('../db');
 
 const router = Router();
 
-// Listar veículos (opcionalmente filtrar por cliente_id)
+// LISTAR VEÍCULOS
 router.get('/', async (req, res) => {
   try {
     const { cliente_id } = req.query;
+
     let query = `
       SELECT v.*, c.nome as cliente_nome
       FROM veiculos v
       LEFT JOIN clientes c ON c.id = v.cliente_id
     `;
+
     const params = [];
 
     if (cliente_id) {
@@ -19,70 +21,58 @@ router.get('/', async (req, res) => {
       params.push(cliente_id);
     }
 
-    query += ' ORDER BY v.modelo';
+    query += ' ORDER BY v.created_at DESC';
+
     const { rows } = await db.query(query, params);
 
-    // Mapear para incluir objeto cliente
-    const result = rows.map(r => ({
-      id: r.id,
-      cliente_id: r.cliente_id,
-      placa: r.placa,
-      modelo: r.modelo,
-      ano: r.ano,
-      cor: r.cor,
-      cliente: r.cliente_nome ? { id: r.cliente_id, nome: r.cliente_nome } : undefined,
-    }));
+    res.json(rows.map(v => ({
+      id: v.id,
+      placa: v.placa,
+      modelo: v.modelo,
+      ano: v.ano,
+      cor: v.cor,
+      cliente: {
+        id: v.cliente_id,
+        nome: v.cliente_nome
+      }
+    })));
 
-    res.json(result);
   } catch (err) {
     console.error('Erro ao listar veículos:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro ao listar veículos' });
   }
 });
 
-// Criar veículo
+// CRIAR VEÍCULO
 router.post('/', async (req, res) => {
   try {
-    const { cliente_id, placa, modelo, ano, cor } = req.body;
-    const { rows } = await db.query(
-      `INSERT INTO veiculos (cliente_id, placa, modelo, ano, cor)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [cliente_id, placa, modelo, ano, cor]
-    );
+    let { cliente_id, placa, modelo, ano, cor } = req.body;
+
+    // 🔥 CORREÇÃO IMPORTANTE (aceita formato do Lovable)
+    if (!cliente_id && req.body.cliente?.id) {
+      cliente_id = req.body.cliente.id;
+    }
+
+    // 🔥 VALIDAÇÃO PROFISSIONAL
+    if (!cliente_id) {
+      return res.status(400).json({ error: 'cliente_id é obrigatório' });
+    }
+
+    if (!placa || !modelo) {
+      return res.status(400).json({ error: 'placa e modelo são obrigatórios' });
+    }
+
+    const { rows } = await db.query(`
+      INSERT INTO veiculos (cliente_id, placa, modelo, ano, cor)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `, [cliente_id, placa, modelo, ano || null, cor || null]);
+
     res.status(201).json(rows[0]);
+
   } catch (err) {
     console.error('Erro ao criar veículo:', err);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// Atualizar veículo
-router.put('/:id', async (req, res) => {
-  try {
-    const { cliente_id, placa, modelo, ano, cor } = req.body;
-    const { rows } = await db.query(
-      `UPDATE veiculos SET cliente_id=$1, placa=$2, modelo=$3, ano=$4, cor=$5
-       WHERE id=$6 RETURNING *`,
-      [cliente_id, placa, modelo, ano, cor, req.params.id]
-    );
-    if (!rows[0]) return res.status(404).json({ error: 'Veículo não encontrado' });
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('Erro ao atualizar veículo:', err);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// Excluir veículo
-router.delete('/:id', async (req, res) => {
-  try {
-    const { rowCount } = await db.query('DELETE FROM veiculos WHERE id = $1', [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: 'Veículo não encontrado' });
-    res.json({ message: 'Veículo excluído' });
-  } catch (err) {
-    console.error('Erro ao excluir veículo:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro ao criar veículo' });
   }
 });
 
