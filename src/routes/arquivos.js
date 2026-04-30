@@ -53,3 +53,21 @@ router.get('/:ordem_id', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+
+
+// 🔎 LISTAR ARQUIVOS POR ORDEM
+router.get('/:ordem_id', async (req, res) => {
+  try {
+    const { ordem_id } = req.params;
+
+    const { rows } = await db.query(
+      'SELECT * FROM arquivos_os WHERE ordem_id = $1 ORDER BY created_at DESC',
+      [ordem_id]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao buscar arquivos' });
+  }
+});
