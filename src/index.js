@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const { authMiddleware } = require('./middleware/auth');
 
@@ -21,22 +22,34 @@ const logsRoutes = require('./routes/logs');
 const alertasRoutes = require('./routes/alertas');
 const resgatesRoutes = require('./routes/resgates');
 
+// 🔥 NOVA ROTA DE ARQUIVOS
+const arquivosRoutes = require('./routes/arquivos');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔥 LOG DE REQUEST (mantém)
+// 🔥 LOG DE REQUEST
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.url}`);
   next();
 });
 
-// 🔥 CORS (ok)
+// 🔥 CORS
 app.use(cors({
   origin: true,
   credentials: true,
 }));
 
 app.use(express.json());
+
+/* ======================================================
+   🔥 SERVIR ARQUIVOS (UPLOADS)
+====================================================== */
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+/* ======================================================
+   ROTAS
+====================================================== */
 
 // ROOT
 app.get('/', (req, res) => {
@@ -62,15 +75,20 @@ app.use('/brindes', authMiddleware, brindesRoutes);
 app.use('/dashboard', authMiddleware, dashboardRoutes);
 app.use('/configuracoes', authMiddleware, configRoutes);
 
-// 🔥 NOVAS ROTAS (ESSENCIAL PRA NÃO DAR ERRO NO FRONT)
+// 🔥 NOVAS ROTAS
 app.use('/servicos', authMiddleware, servicosRoutes);
 app.use('/logs', authMiddleware, logsRoutes);
 app.use('/alertas', authMiddleware, alertasRoutes);
 
-// 🔥 CORREÇÃO IMPORTANTE AQUI 👇
+// 🔥 RESGATES
 app.use('/resgates_brindes', authMiddleware, resgatesRoutes);
 
-// ERROR HANDLER
+// 🔥 ARQUIVOS (UPLOAD)
+app.use('/arquivos', authMiddleware, arquivosRoutes);
+
+/* ======================================================
+   ERROR HANDLER
+====================================================== */
 app.use((err, req, res, next) => {
   console.error('Erro não tratado:', err);
   res.status(500).json({
